@@ -348,7 +348,7 @@
             style="background: rgba(220,38,38,0.06); border-color: rgba(220,38,38,0.18); color: #dc2626;"
           >
             <app-icon name="alertTriangle" [size]="13" class="shrink-0" />
-            <span>Select at least one widget before exporting.</span>
+            <span>{{ exportErrorMsg() }}</span>
           </div>
         }
         

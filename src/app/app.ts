@@ -1,4 +1,4 @@
-import { Component, inject, computed, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, computed, signal, ViewChild, ElementRef } from '@angular/core';
 import { DocumentStateService, Template, AccordionSection, WidgetId, Student } from './services/document-state.service';
 import { IconComponent } from './components/icon';
 import { DocumentPageComponent } from './components/document-page/document-page.component';
@@ -99,22 +99,86 @@ export class App {
     return styles[tag] || { bg: "#f3f4f6", color: "#6b7280" };
   }
 
+  protected readonly exportErrorMsg = signal<string>('');
+
   // Generate and download a pixel-perfect PDF of the document preview
   async exportPdf() {
     if (this.state.activeWidgets().size === 0) {
+      this.exportErrorMsg.set('Select at least one widget before exporting.');
       this.state.exportState.set('error');
       setTimeout(() => this.state.exportState.set('idle'), 3500);
       return;
     }
 
     this.state.exportState.set('loading');
+    this.exportErrorMsg.set('');
+    
+    // Clone element into an off-screen container to avoid parent transform/scale
+    // interference and CSS animation side-effects that freeze html2canvas
+    let offscreen: HTMLDivElement | null = null;
     
     try {
-      // Dynamically import html2pdf.js for optimal bundler compatibility and code-splitting
-      const html2pdf = (await import('html2pdf.js')).default;
+      // Dynamically import from the minified bundle to bypass ESM/CJS interop issues and Vite build warnings
+      // @ts-ignore
+      const html2pdfModule = await import('html2pdf.js/dist/html2pdf.min.js');
       
-      const element = this.pdfContent.nativeElement;
+      let html2pdf: any = html2pdfModule;
+      if (html2pdf && html2pdf.default) {
+        html2pdf = html2pdf.default;
+      }
+      if (html2pdf && html2pdf.default) {
+        html2pdf = html2pdf.default;
+      }
+      
+      if (typeof html2pdf !== 'function') {
+        const winHtml2pdf = (window as any).html2pdf;
+        if (typeof winHtml2pdf === 'function') {
+          html2pdf = winHtml2pdf;
+        } else {
+          throw new Error(`html2pdf was not loaded correctly (Type: ${typeof html2pdfModule}, resolved: ${typeof html2pdf}).`);
+        }
+      }
+      
+      const source = this.pdfContent.nativeElement as HTMLElement;
       const isA4 = this.state.pageSizeA4();
+      const docWidth = this.state.docWidth();
+      
+      // Create off-screen container that is detached from any CSS transforms
+      offscreen = document.createElement('div');
+      offscreen.style.cssText = `
+        position: fixed; left: -9999px; top: 0;
+        width: ${docWidth}px; background: white;
+        transform: none !important; z-index: -1;
+        overflow: visible;
+      `;
+      
+      // Deep clone the document content
+      const clone = source.cloneNode(true) as HTMLElement;
+      
+      // Strip ALL animations, transitions, and animation side-effects from the clone.
+      // The slideDown keyframes start at opacity:0 / max-height:0 which causes
+      // html2canvas to render invisible or oversized content, freezing the UI.
+      clone.querySelectorAll('*').forEach((el: Element) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.animation = 'none';
+        htmlEl.style.transition = 'none';
+        htmlEl.style.maxHeight = 'none';
+        htmlEl.style.opacity = '1';
+        htmlEl.style.overflow = 'visible';
+        htmlEl.style.transform = 'none';
+      });
+      clone.style.animation = 'none';
+      clone.style.transition = 'none';
+      clone.style.maxHeight = 'none';
+      clone.style.opacity = '1';
+      clone.style.overflow = 'visible';
+      clone.style.transform = 'none';
+      
+      offscreen.appendChild(clone);
+      document.body.appendChild(offscreen);
+      
+      // Allow a brief tick for the DOM to settle after appending
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       const student = this.state.selectedStudent();
       const sanitizedName = student.fullName.replace(/\s+/g, '_');
@@ -125,11 +189,13 @@ export class App {
         filename: `${sanitizedName}_${sanitizedId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
-          scale: 2.5, // 2.5x scale for high-definition rendering (perfect text and vectors)
+          scale: 2, // 2x scale for high-definition rendering
           useCORS: true,
           logging: false,
           scrollX: 0,
-          scrollY: 0
+          scrollY: 0,
+          width: docWidth,
+          windowWidth: docWidth
         },
         jsPDF: { 
           unit: 'pt', 
@@ -138,15 +204,21 @@ export class App {
         }
       };
       
-      // Generate, trigger browser download, and await completion
-      await html2pdf().from(element).set(opt).save();
+      // Generate from the clean off-screen clone, trigger browser download
+      await html2pdf().from(clone).set(opt).save();
       
       this.state.exportState.set('success');
       setTimeout(() => this.state.exportState.set('idle'), 3500);
-    } catch (error) {
+    } catch (error: any) {
       console.error('PDF generation error:', error);
+      this.exportErrorMsg.set(error?.message || String(error) || 'An unknown error occurred during PDF generation.');
       this.state.exportState.set('error');
-      setTimeout(() => this.state.exportState.set('idle'), 3500);
+      setTimeout(() => this.state.exportState.set('idle'), 5000);
+    } finally {
+      // Always clean up the off-screen container
+      if (offscreen && offscreen.parentNode) {
+        offscreen.parentNode.removeChild(offscreen);
+      }
     }
   }
 }

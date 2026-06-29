@@ -92,6 +92,11 @@ import { IconComponent } from '../icon';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      background: white;
+    }
     /* Simple smooth entrance animation classes */
     .animate-fade-in {
       animation: fadeIn 0.3s ease-out forwards;
