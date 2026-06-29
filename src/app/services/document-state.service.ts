@@ -92,8 +92,6 @@ export interface Student {
 export class DocumentStateService {
   // ─── CONSTANTS & DATA ────────────────────────────────────────────────────────
 
-  // ─── CONSTANTS & DATA ────────────────────────────────────────────────────────
-
   readonly STUDENTS: Student[] = [
     {
       id: "2021-CS-04782",

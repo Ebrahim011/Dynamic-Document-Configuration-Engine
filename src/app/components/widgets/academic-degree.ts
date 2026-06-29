@@ -21,7 +21,7 @@ import { CommonModule } from '@angular/common';
           </tr>
         </thead>
         <tbody>
-          @for (c of courses; track c.code) {
+          @for (c of courses(); track c.code) {
             <tr class="border-b" [ngClass]="$index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'">
               <td class="py-1 text-[8px] font-mono pr-2" style="color: #2254c7">{{ c.code }}</td>
               <td class="py-1 text-[8.5px] text-gray-800 pl-2 pr-2">{{ c.name }}</td>
@@ -57,14 +57,15 @@ import { CommonModule } from '@angular/common';
 export class AcademicDegreeWidgetComponent {
   private readonly docState = inject(DocumentStateService);
 
-  readonly courses = this.docState.COURSES;
+  readonly courses = computed(() => this.docState.selectedStudent().courses);
 
   readonly totalCredits = computed(() => {
-    return this.courses.reduce((sum, c) => sum + c.credits, 0);
+    return this.courses().reduce((sum, c) => sum + c.credits, 0);
   });
 
   readonly cumulativeGpa = computed(() => {
-    const totalQualityPts = this.courses.reduce((sum, c) => sum + c.pts * c.credits, 0);
+    if (this.totalCredits() === 0) return '0.00';
+    const totalQualityPts = this.courses().reduce((sum, c) => sum + c.pts * c.credits, 0);
     return (totalQualityPts / this.totalCredits()).toFixed(2);
   });
 }

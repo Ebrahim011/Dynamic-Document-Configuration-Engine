@@ -128,21 +128,23 @@ export class AttendanceWidgetComponent {
     { val: 100, y: this.getYCoord(100) },
   ];
 
+  readonly student = this.docState.selectedStudent;
+
   // Computed summary stats
   readonly summaryMetrics = computed(() => {
-    const data = this.docState.ATTENDANCE_DATA;
-    const avg = Math.round(data.reduce((sum, d) => sum + d.pct, 0) / data.length);
+    const s = this.student();
     return [
-      { val: `${avg}%`, label: "Avg. Rate", color: "#131f40" },
-      { val: "142", label: "Days Present", color: "#16a34a" },
-      { val: "10", label: "Days Absent", color: "#dc2626" },
-      { val: "4", label: "Excused", color: "#f0b100" },
+      { val: `${s.attendanceAvgRate}%`, label: "Avg. Rate", color: "#131f40" },
+      { val: `${s.attendanceDaysPresent}`, label: "Days Present", color: "#16a34a" },
+      { val: `${s.attendanceDaysAbsent}`, label: "Days Absent", color: "#dc2626" },
+      { val: `${s.attendanceDaysExcused}`, label: "Excused", color: "#f0b100" },
     ];
   });
 
   // Calculate bar sizes and positions
   readonly bars = computed(() => {
-    const data = this.docState.ATTENDANCE_DATA;
+    const s = this.student();
+    const data = s.attendanceData;
     const plotWidth = this.width - this.paddingLeft - this.paddingRight;
     const barWidth = 14;
     const totalBars = data.length;
@@ -166,8 +168,8 @@ export class AttendanceWidgetComponent {
         height: Math.max(2, barHeight), // Ensure at least a sliver is visible
         label: d.month,
         val: d.pct,
-        isSpecial: idx === 3, // December (100% attendance index 3) is highlighted in gold
-        monthName: monthFullNames[idx]
+        isSpecial: d.pct === 100, // Gold highlight for perfect attendance
+        monthName: monthFullNames[idx] || d.month
       };
     });
   });

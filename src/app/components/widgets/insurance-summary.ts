@@ -1,13 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
+import { DocumentStateService } from '../../services/document-state.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-insurance-summary-widget',
   standalone: true,
+  imports: [CommonModule],
   template: `
     <div class="px-6 py-4 relative overflow-hidden">
       <div class="text-[8.5px] font-bold uppercase tracking-[0.18em] mb-2.5" style="color: #2254c7">Insurance & Medical</div>
       <div class="space-y-1.5">
-        @for (item of insuranceItems; track item.k) {
+        @for (item of insuranceItems(); track item.k) {
           <div class="flex gap-2 items-baseline">
             <span class="text-[7.5px] text-gray-400 shrink-0 w-16">{{ item.k }}</span>
             <span class="text-[9px] text-gray-700">{{ item.v }}</span>
@@ -28,12 +31,19 @@ import { Component } from '@angular/core';
   `
 })
 export class InsuranceSummaryWidgetComponent {
-  readonly insuranceItems = [
-    { k: "Policy No.", v: "AUT-INS-2021-04782" },
-    { k: "Provider", v: "Egypt National Health Fund" },
-    { k: "Coverage", v: "Full Medical & Dental" },
-    { k: "Valid Through", v: "August 31, 2025" },
-    { k: "Blood Type", v: "O Positive" },
-    { k: "Allergies", v: "None documented" }
-  ];
+  private readonly docState = inject(DocumentStateService);
+
+  readonly student = this.docState.selectedStudent;
+
+  readonly insuranceItems = computed(() => {
+    const s = this.student();
+    return [
+      { k: "Policy No.", v: s.insurancePolicyNo },
+      { k: "Provider", v: s.insuranceProvider },
+      { k: "Coverage", v: s.insuranceCoverage },
+      { k: "Valid Through", v: s.insuranceValidThrough },
+      { k: "Blood Type", v: s.insuranceBloodType },
+      { k: "Allergies", v: s.insuranceAllergies }
+    ];
+  });
 }

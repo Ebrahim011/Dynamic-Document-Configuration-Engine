@@ -3,48 +3,34 @@
   <!-- ── TOP NAV HEADER ── -->
   <header
     class="h-12 flex items-center px-4 gap-3 shrink-0 z-30"
-    style="background: linear-gradient(135deg, #2254c7 0%, #131f40 100%)"
+    style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)"
   >
     <!-- Logo -->
     <div class="flex items-center gap-2 shrink-0">
-      <div class="w-7 h-7 rounded-lg bg-white/15 border border-white/20 flex items-center justify-center">
+      <div class="w-7 h-7 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center">
         <app-icon name="graduationCap" [size]="14" class="text-white" />
       </div>
-      <span class="text-sm font-bold text-white tracking-tight">EduSIS</span>
+      <span class="text-sm font-bold text-white tracking-tight">Manarsa</span>
       <div
-        class="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded-sm"
+        class="ml-1 text-[9px] font-bold px-2 py-0.5 rounded-full"
         style="background: #f0b100; color: #131f40;"
-      >PRO</div>
-    </div>
-    
-    <div class="h-4 w-px bg-white/15 mx-1"></div>
-    
-    <!-- Breadcrumbs -->
-    <div class="flex items-center gap-1 text-[11px] text-white/60 min-w-0">
-      <span class="flex items-center gap-1 shrink-0">
-        <span class="hover:text-white cursor-pointer transition-colors">Faculty</span>
-        <app-icon name="chevronRight" [size]="10" class="text-white/30" />
-      </span>
-      <span class="flex items-center gap-1 shrink-0">
-        <span class="hover:text-white cursor-pointer transition-colors">Students</span>
-        <app-icon name="chevronRight" [size]="10" class="text-white/30" />
-      </span>
-      <span class="flex items-center gap-1 shrink-0">
-        <span class="hover:text-white cursor-pointer transition-colors">Ebrahim Gabr</span>
-        <app-icon name="chevronRight" [size]="10" class="text-white/30" />
-      </span>
-      <span class="text-white font-semibold truncate">Export Documents</span>
+      >Documents</div>
     </div>
     
     <!-- Right actions -->
-    <div class="ml-auto flex items-center gap-1">
+    <div class="ml-auto flex items-center gap-1.5">
       <button class="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors">
         <app-icon name="bell" [size]="14" />
       </button>
       <button class="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors">
         <app-icon name="settings" [size]="14" />
       </button>
-      <div class="w-7 h-7 ml-1 rounded-full bg-[#f0b100] flex items-center justify-center text-[10px] font-bold" style="color: #131f40;">EG</div>
+      <div 
+        class="w-7 h-7 ml-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-inner" 
+        [style.background]="'linear-gradient(135deg, ' + state.selectedStudent().avatarStartColor + ', ' + state.selectedStudent().avatarEndColor + ')'"
+      >
+        {{ state.selectedStudent().avatarInitials }}
+      </div>
     </div>
   </header>
 
@@ -55,7 +41,7 @@
     <aside class="w-[400px] shrink-0 border-r border-black/[0.07] flex flex-col overflow-hidden bg-white z-20 shadow-sm">
       
       <!-- Sidebar Header -->
-      <div class="px-4 pt-4 pb-3 border-b border-black/[0.06] shrink-0 space-y-3">
+      <div class="px-4 pt-4 pb-3 border-b border-black/[0.06] shrink-0 space-y-3 z-30">
         <div class="flex items-center justify-between">
           <h1 class="text-[13px] font-bold" style="color: #131f40;">Document Configuration</h1>
           <button class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
@@ -63,20 +49,72 @@
           </button>
         </div>
 
+        <!-- Student Search bar -->
+        <div class="relative">
+          <app-icon name="search" [size]="12" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            [value]="studentSearchQuery"
+            (input)="onStudentSearchInput($event)"
+            (focus)="showStudentDropdown = true"
+            (blur)="onStudentSearchBlur()"
+            placeholder="Search Student..."
+            class="w-full pl-9 pr-3 py-2 text-xs bg-[#f8f9fc] border border-black/[0.07] rounded-xl text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2254c7]/30 transition-all font-sans"
+          />
+
+          <!-- Autocomplete Dropdown list -->
+          @if (showStudentDropdown && filteredStudents().length > 0) {
+            <div class="absolute left-0 right-0 top-full mt-1.5 max-h-60 overflow-y-auto bg-white border border-black/[0.08] rounded-xl shadow-xl z-50 divide-y divide-black/[0.04] animate-fade-in">
+              @for (student of filteredStudents(); track student.id) {
+                <div
+                  (mousedown)="selectStudent(student)"
+                  class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-black/[0.02] active:bg-[#f2f5fb] transition-colors"
+                >
+                  <!-- Student mini initials avatar -->
+                  <div
+                    class="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                    [style.background]="'linear-gradient(135deg, ' + student.avatarStartColor + ', ' + student.avatarEndColor + ')'"
+                  >
+                    {{ student.avatarInitials }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-xs font-semibold text-gray-800 truncate">{{ student.fullName }}</div>
+                    <div class="text-[9px] text-gray-400 truncate">ID: {{ student.id }} · {{ student.department }}</div>
+                  </div>
+                  <!-- Status indicator -->
+                  <div
+                    class="text-[8px] font-bold px-1.5 py-0.5 rounded-full border shrink-0"
+                    [style.background]="student.enrollmentStatus === 'Active' ? 'rgba(22,163,74,0.06)' : 'rgba(107,114,128,0.06)'"
+                    [style.color]="student.enrollmentStatus === 'Active' ? '#16a34a' : '#6b7280'"
+                    [style.borderColor]="student.enrollmentStatus === 'Active' ? 'rgba(22,163,74,0.12)' : 'rgba(107,114,128,0.12)'"
+                  >
+                    {{ student.enrollmentStatus }}
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
         <!-- Student context card -->
         <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-black/[0.07]" style="background: #f8f9fc;">
           <div
-            class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
-            style="background: linear-gradient(135deg,#2254c7,#131f40);"
-          >EG</div>
+            class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 shadow-inner"
+            [style.background]="'linear-gradient(135deg, ' + state.selectedStudent().avatarStartColor + ', ' + state.selectedStudent().avatarEndColor + ')'"
+          >
+            {{ state.selectedStudent().avatarInitials }}
+          </div>
           <div class="flex-1 min-w-0">
-            <div class="text-xs font-semibold truncate" style="color: #131f40;">Ebrahim Ahmed Gabr</div>
-            <div class="text-[10px] text-gray-400 mt-0.5">ID: 2021-CS-04782 · CS Info Systems</div>
+            <div class="text-xs font-semibold truncate" style="color: #131f40;">{{ state.selectedStudent().fullName }}</div>
+            <div class="text-[10px] text-gray-400 mt-0.5">ID: {{ state.selectedStudent().id }} · {{ state.selectedStudent().department }}</div>
           </div>
           <div
             class="text-[9px] px-2 py-0.5 rounded-full font-bold border shrink-0"
-            style="background: rgba(22,163,74,0.08); color: #16a34a; borderColor: rgba(22,163,74,0.2);"
-          >Active</div>
+            [style.background]="state.selectedStudent().enrollmentStatus === 'Active' ? 'rgba(22,163,74,0.08)' : 'rgba(107,114,128,0.08)'"
+            [style.color]="state.selectedStudent().enrollmentStatus === 'Active' ? '#16a34a' : '#6b7280'"
+            [style.borderColor]="state.selectedStudent().enrollmentStatus === 'Active' ? 'rgba(22,163,74,0.2)' : 'rgba(107,114,128,0.2)'"
+          >
+            {{ state.selectedStudent().enrollmentStatus }}
+          </div>
         </div>
 
         <!-- Page configuration controls -->
@@ -452,7 +490,7 @@
       </div>
       <div>
         <div class="text-sm font-bold" style="color: #131f40;">Document Exported Successfully</div>
-        <div class="text-[11px] text-gray-400 mt-0.5">Gabr_Ebrahim_2021CS04782.pdf saved</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">{{ state.selectedStudent().fullName.split(' ').join('_') }}_{{ state.selectedStudent().id.split('-').join('') }}.pdf saved</div>
       </div>
       <button (click)="state.exportState.set('idle')" class="ml-2 text-gray-300 hover:text-gray-500 transition-colors outline-none">
         <app-icon name="x" [size]="14" />

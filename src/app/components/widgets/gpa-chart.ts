@@ -121,14 +121,16 @@ import { CommonModule } from '@angular/common';
       </div>
 
       <div class="flex justify-between mt-1.5 border-t border-gray-50 pt-1.5">
-        <span class="text-[7px] text-gray-400">Current: <strong style="color: #2254c7">3.62</strong></span>
-        <span class="text-[7px] text-gray-400">Classification: <strong class="text-gray-600">Distinction</strong></span>
+        <span class="text-[7px] text-gray-400">Current: <strong style="color: #2254c7">{{ student().cumulativeGpa.toFixed(2) }}</strong></span>
+        <span class="text-[7px] text-gray-400">Classification: <strong class="text-gray-600">{{ student().gpaClassification }}</strong></span>
       </div>
     </div>
   `
 })
 export class GpaChartWidgetComponent {
   private readonly docState = inject(DocumentStateService);
+
+  readonly student = this.docState.selectedStudent;
 
   hoveredIndex: number | null = null;
 
@@ -154,21 +156,25 @@ export class GpaChartWidgetComponent {
 
   // Map GPA data points to SVG coordinates
   get points() {
-    const data = this.docState.GPA_DATA;
+    const s = this.student();
+    const data = s.gpaData;
     const plotWidth = this.width - this.paddingLeft - this.paddingRight;
     const semNames = [
       "Semester 1", "Semester 2", "Semester 3", 
-      "Semester 4", "Semester 5", "Semester 6"
+      "Semester 4", "Semester 5", "Semester 6",
+      "Semester 7", "Semester 8", "Semester 9"
     ];
+    if (data.length === 0) return [];
+    const divisor = data.length > 1 ? data.length - 1 : 1;
     return data.map((d, idx) => {
-      const x = this.paddingLeft + idx * (plotWidth / (data.length - 1));
+      const x = this.paddingLeft + idx * (plotWidth / divisor);
       const y = this.getYCoord(d.gpa);
       return {
         x,
         y,
         label: d.s,
         val: d.gpa,
-        semName: semNames[idx]
+        semName: semNames[idx] || d.s
       };
     });
   }

@@ -1,13 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
+import { DocumentStateService } from '../../services/document-state.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-contact-info-widget',
   standalone: true,
+  imports: [CommonModule],
   template: `
     <div class="px-6 py-4">
       <div class="text-[8.5px] font-bold uppercase tracking-[0.18em] mb-2.5" style="color: #2254c7">Contact Details</div>
       <div class="space-y-1.5">
-        @for (item of contactItems; track item.k) {
+        @for (item of contactItems(); track item.k) {
           <div class="flex gap-2 items-baseline">
             <span class="text-[7.5px] text-gray-400 shrink-0 w-16">{{ item.k }}</span>
             <span class="text-[9px] text-gray-700">{{ item.v }}</span>
@@ -18,12 +21,19 @@ import { Component } from '@angular/core';
   `
 })
 export class ContactInfoWidgetComponent {
-  readonly contactItems = [
-    { k: "Email", v: "e.gabr@student.aut.edu.eg" },
-    { k: "Mobile", v: "+20 110 234 5678" },
-    { k: "Address", v: "15 El-Nozha St., Alexandria" },
-    { k: "Emergency", v: "Ahmed Gabr · +20 100 876 5432" },
-    { k: "Nationality", v: "Egyptian" },
-    { k: "Date of Birth", v: "14 March 2003" }
-  ];
+  private readonly docState = inject(DocumentStateService);
+
+  readonly student = this.docState.selectedStudent;
+
+  readonly contactItems = computed(() => {
+    const s = this.student();
+    return [
+      { k: "Email", v: s.email },
+      { k: "Mobile", v: s.phone },
+      { k: "Address", v: s.address },
+      { k: "Emergency", v: `${s.emergencyContactName} · ${s.emergencyContactPhone} (${s.emergencyContactRelation})` },
+      { k: "Nationality", v: s.nationality },
+      { k: "Date of Birth", v: s.dob }
+    ];
+  });
 }

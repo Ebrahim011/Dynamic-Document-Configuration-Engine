@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
+import { DocumentStateService } from '../../services/document-state.service';
 import { IconComponent } from '../icon';
 
 @Component({
@@ -15,7 +16,7 @@ import { IconComponent } from '../icon';
           </div>
           <div>
             <div class="text-[11px] font-bold uppercase tracking-[0.14em]" style="color: #131f40">Alexandria University of Technology</div>
-            <div class="text-[9px] text-gray-400 tracking-wide mt-0.5">Faculty of Computer Science & Information Technology</div>
+            <div class="text-[9px] text-gray-400 tracking-wide mt-0.5">{{ student().faculty }}</div>
           </div>
         </div>
         
@@ -28,7 +29,7 @@ import { IconComponent } from '../icon';
               }
             </div>
           </div>
-          <div class="text-[7px] font-mono text-gray-400">DOC-2024-04782</div>
+          <div class="text-[7px] font-mono text-gray-400">DOC-2024-{{ lastIdPart() }}</div>
         </div>
       </div>
       
@@ -37,17 +38,29 @@ import { IconComponent } from '../icon';
       
       <!-- Student Profile Section -->
       <div class="flex gap-5 items-start">
-        <div class="w-16 h-20 bg-gray-100 border border-gray-200 flex flex-col items-center justify-center shrink-0 gap-1 text-gray-300">
-          <app-icon name="user" [size]="22" />
-          <span class="text-[7px] text-gray-300">PHOTO</span>
+        <div class="w-16 h-20 rounded border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center bg-gray-50 shadow-sm">
+          <svg class="w-full h-full" viewBox="0 0 64 80">
+            <defs>
+              <linearGradient [id]="'photoGrad-' + student().id" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" [attr.stop-color]="student().avatarStartColor" />
+                <stop offset="100%" [attr.stop-color]="student().avatarEndColor" />
+              </linearGradient>
+            </defs>
+            <rect width="64" height="80" [attr.fill]="'url(#photoGrad-' + student().id + ')'" />
+            <path d="M8 80 C8 60, 56 60, 56 80 Z" fill="rgba(255,255,255,0.85)"/>
+            <circle cx="32" cy="38" r="14" fill="rgba(255,255,255,0.95)"/>
+            <text x="32" y="42" [attr.fill]="student().avatarEndColor" font-size="10" font-weight="bold" text-anchor="middle" font-family="sans-serif">
+              {{ student().avatarInitials }}
+            </text>
+          </svg>
         </div>
         
         <div class="flex-1">
-          <div class="text-[15px] font-bold tracking-tight leading-tight" style="color: #131f40">Ebrahim Ahmed Gabr</div>
-          <div class="text-[9px] text-gray-400 font-mono mb-3">Student ID: 2021-CS-04782</div>
+          <div class="text-[15px] font-bold tracking-tight leading-tight" style="color: #131f40">{{ student().fullName }}</div>
+          <div class="text-[9px] text-gray-400 font-mono mb-3">Student ID: {{ student().id }}</div>
           
           <div class="grid grid-cols-2 gap-x-5 gap-y-1.5">
-            @for (info of studentDetails; track info.k) {
+            @for (info of studentDetails(); track info.k) {
               <div>
                 <div class="text-[7.5px] uppercase tracking-widest text-gray-400 font-semibold">{{ info.k }}</div>
                 <div class="text-[9px] text-gray-800 font-medium mt-0.5">{{ info.v }}</div>
@@ -67,13 +80,25 @@ import { IconComponent } from '../icon';
               ></div>
             }
           </div>
-          <div class="text-[7px] font-mono text-gray-400">2021CS04782</div>
+          <div class="text-[7px] font-mono text-gray-400">{{ barcodeText() }}</div>
         </div>
       </div>
     </div>
   `
 })
 export class StudentHeaderWidgetComponent {
+  private readonly docState = inject(DocumentStateService);
+
+  readonly student = this.docState.selectedStudent;
+
+  readonly lastIdPart = computed(() => {
+    return this.student().id.split('-').pop() || '';
+  });
+
+  readonly barcodeText = computed(() => {
+    return this.student().id.replace(/-/g, '');
+  });
+
   readonly qrCells = [
     1,1,1,1,1,1,1,
     0,0,0,0,0,0,0,
@@ -88,12 +113,15 @@ export class StudentHeaderWidgetComponent {
     2,1,3,1,2,2,1,3,1,1,2,1,3,2,1,2,1,3,1,2,2,1,1,3,2,1,2,3,1,1
   ];
 
-  readonly studentDetails = [
-    { k: "Major", v: "Computer Science — Information Systems" },
-    { k: "Level", v: "Senior · Year 4, Semester 7" },
-    { k: "Enrollment", v: "September 2021" },
-    { k: "Expected Grad.", v: "June 2025" },
-    { k: "Cumulative GPA", v: "3.62 / 4.00 — Distinction" },
-    { k: "Earned Credits", v: "112 / 132 Required" }
-  ];
+  readonly studentDetails = computed(() => {
+    const s = this.student();
+    return [
+      { k: "Major", v: s.department },
+      { k: "Level", v: s.level },
+      { k: "Enrollment", v: s.admissionDate },
+      { k: "Expected Grad.", v: s.expectedGraduation },
+      { k: "Cumulative GPA", v: `${s.cumulativeGpa.toFixed(2)} / 4.00 — ${s.gpaClassification}` },
+      { k: "Earned Credits", v: `${s.earnedCredits} / ${s.totalCredits} Required` }
+    ];
+  });
 }

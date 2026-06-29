@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
+import { DocumentStateService } from '../../services/document-state.service';
 
 @Component({
   selector: 'app-verification-footer-widget',
@@ -12,12 +13,12 @@ import { Component } from '@angular/core';
       <div class="text-[7.5px] text-gray-400 text-center leading-relaxed mb-5 px-4">
         This document is an official record issued by Alexandria University of Technology. Any alterations or unauthorized
         modifications render this document invalid. Verification reference:
-        <span class="font-mono text-gray-600">AUT-VER-2024-F8A2C1</span>
+        <span class="font-mono text-gray-600">{{ student().verificationCode }}</span>
       </div>
       
       <!-- Official Signatures -->
       <div class="grid grid-cols-3 gap-6">
-        @for (sig of signatures; track sig.role) {
+        @for (sig of student().signatures; track sig.role) {
           <div class="text-center">
             <div class="h-8 border-b border-gray-400 mb-1.5 flex items-end justify-center pb-0.5">
               <span class="text-[11px] italic text-gray-400 font-serif">{{ sig.shortName }}</span>
@@ -30,17 +31,14 @@ import { Component } from '@angular/core';
       
       <!-- Footer metadata -->
       <div class="mt-4 flex justify-between items-center border-t border-gray-100 pt-3">
-        <div class="text-[7px] font-mono text-gray-400">AUCST/REG/2024/Q4</div>
-        <div class="text-[7px] text-gray-400">Issue Date: 22 June 2024</div>
-        <div class="text-[7px] text-gray-400">Valid for 90 days from date of issue</div>
+        <div class="text-[7px] font-mono text-gray-400">{{ student().documentRef }}</div>
+        <div class="text-[7px] text-gray-400">Issue Date: {{ student().issueDate }}</div>
+        <div class="text-[7px] text-gray-400">Valid for {{ student().validDays }} days from date of issue</div>
       </div>
     </div>
   `
 })
 export class VerificationFooterWidgetComponent {
-  readonly signatures = [
-    { role: "University Registrar", name: "Dr. Maha El-Sayed", shortName: "Maha" },
-    { role: "Dean of Faculty", name: "Prof. Ahmed Khalil", shortName: "Ahmed" },
-    { role: "University Provost", name: "Prof. Ibrahim Hassan", shortName: "Ibrahim" }
-  ];
+  private readonly docState = inject(DocumentStateService);
+  readonly student = this.docState.selectedStudent;
 }

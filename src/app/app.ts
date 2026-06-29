@@ -116,9 +116,13 @@ export class App {
       const element = this.pdfContent.nativeElement;
       const isA4 = this.state.pageSizeA4();
       
+      const student = this.state.selectedStudent();
+      const sanitizedName = student.fullName.replace(/\s+/g, '_');
+      const sanitizedId = student.id.replace(/-/g, '');
+      
       const opt: any = { 
         margin: 0,
-        filename: 'Gabr_Ebrahim_2021CS04782.pdf',
+        filename: `${sanitizedName}_${sanitizedId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
           scale: 2.5, // 2.5x scale for high-definition rendering (perfect text and vectors)
